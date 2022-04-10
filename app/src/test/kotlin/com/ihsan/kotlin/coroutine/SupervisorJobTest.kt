@@ -3,6 +3,7 @@ package com.ihsan.kotlin.coroutine
 import kotlinx.coroutines.*
 import org.junit.jupiter.api.Test
 import java.util.concurrent.Executors
+import kotlin.coroutines.CoroutineContext
 
 class SupervisorJobTest {
 
@@ -46,6 +47,30 @@ class SupervisorJobTest {
             }
 
             delay(3000)
+        }
+    }
+
+    @Test
+    fun testExceptionSupervisorJob() {
+        val exceptionHandler = CoroutineExceptionHandler {
+                _: CoroutineContext, throwable: Throwable ->
+            println("Error happen ${throwable.message}")
+        }
+        val dispatcher = Executors.newFixedThreadPool(10).asCoroutineDispatcher()
+        val scope = CoroutineScope(Job() + dispatcher)
+
+        runBlocking {
+            val job = scope.launch {
+                supervisorScope {
+                    launch(exceptionHandler) {
+                        launch {
+                            println("Job 1")
+                            throw IllegalArgumentException("Job 1 error")
+                        }
+                    }
+                }
+            }
+            job.join()
         }
     }
 }
